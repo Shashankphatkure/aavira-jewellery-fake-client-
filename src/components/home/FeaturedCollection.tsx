@@ -11,9 +11,9 @@ export function FeaturedCollection() {
 
   return (
     <section className="container-aavira py-20 md:py-28">
-      <div className="grid md:grid-cols-12 gap-8 md:gap-10">
-        <Reveal className="md:col-span-4 relative">
-          <div className="relative aspect-[3/4] md:h-full overflow-hidden bg-ivory-deep">
+      <div className="grid md:grid-cols-12 md:items-start gap-8 md:gap-10">
+        <Reveal className="md:col-span-4">
+          <div className="relative aspect-[3/4] overflow-hidden bg-ivory-deep">
             <Image
               src={LIFESTYLE_IMAGES.paperclipNecklaceModel}
               alt="Model wearing a layered Aavira necklace"
