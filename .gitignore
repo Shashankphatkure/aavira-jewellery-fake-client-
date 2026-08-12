@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local session logs (unrelated to the app)
+mcp-logs.txt
+wa-logs.txt
