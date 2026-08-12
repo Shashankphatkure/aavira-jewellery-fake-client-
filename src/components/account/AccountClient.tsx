@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
+import type { User } from "@supabase/supabase-js";
 import { LogOut, Package } from "lucide-react";
-import { clearMockUser, getMockUser, setMockUser, type MockUser } from "@/lib/commerce/auth";
-import { readOrderHistory, type Order } from "@/lib/commerce/order";
+import { createClient } from "@/lib/supabase/client";
+import { fetchMyOrders, type Order } from "@/lib/commerce/orders";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 
@@ -13,29 +14,83 @@ const inputClasses =
   "w-full border border-line bg-cream px-4 py-3 text-sm outline-none focus:border-charcoal transition-colors";
 
 export function AccountClient() {
-  const [user, setUser] = useState<MockUser | null | undefined>(undefined);
+  const supabase = createClient();
+  const [user, setUser] = useState<User | null | undefined>(undefined);
   const [orders, setOrders] = useState<Order[]>([]);
   const [mode, setMode] = useState<"signin" | "register">("signin");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Hydrating client-only localStorage after mount avoids an SSR/client markup mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUser(getMockUser());
-    setOrders(readOrderHistory());
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      // Syncing to the external auth state change (user signed out), not local state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOrders([]);
+      return;
+    }
+    fetchMyOrders()
+      .then(setOrders)
+      .catch(() => setOrders([]));
+  }, [user]);
 
   if (user === undefined) return null;
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const account = { name: form.name || form.email.split("@")[0], email: form.email };
-    setMockUser(account);
-    setUser(account);
+    setError(null);
+    setNotice(null);
+    setSubmitting(true);
+
+    if (mode === "register") {
+      const { data, error } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: { data: { full_name: form.name } },
+      });
+      setSubmitting(false);
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      if (!data.session) {
+        setNotice("Check your inbox to confirm your email, then sign in.");
+        setMode("signin");
+        return;
+      }
+      setUser(data.user);
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
+      setSubmitting(false);
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      setUser(data.user);
+    }
   }
 
-  function handleLogout() {
-    clearMockUser();
+  async function handleLogout() {
+    await supabase.auth.signOut();
     setUser(null);
   }
 
@@ -45,7 +100,10 @@ export function AccountClient() {
         <div className="flex border-b border-line mb-8">
           <button
             type="button"
-            onClick={() => setMode("signin")}
+            onClick={() => {
+              setMode("signin");
+              setError(null);
+            }}
             className={`flex-1 pb-3 text-xs uppercase tracking-[0.1em] border-b-2 -mb-px ${
               mode === "signin" ? "border-charcoal text-charcoal" : "border-transparent text-charcoal-faint"
             }`}
@@ -54,7 +112,10 @@ export function AccountClient() {
           </button>
           <button
             type="button"
-            onClick={() => setMode("register")}
+            onClick={() => {
+              setMode("register");
+              setError(null);
+            }}
             className={`flex-1 pb-3 text-xs uppercase tracking-[0.1em] border-b-2 -mb-px ${
               mode === "register" ? "border-charcoal text-charcoal" : "border-transparent text-charcoal-faint"
             }`}
@@ -62,6 +123,10 @@ export function AccountClient() {
             Create Account
           </button>
         </div>
+
+        {notice && (
+          <p className="text-sm text-gold-deep mb-4 text-center">{notice}</p>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {mode === "register" && (
@@ -84,25 +149,30 @@ export function AccountClient() {
           <input
             required
             type="password"
+            minLength={6}
             placeholder="Password"
             value={form.password}
             onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
             className={inputClasses}
           />
-          <Button type="submit" className="mt-2">
-            {mode === "signin" ? "Sign In" : "Create Account"}
+          {error && <p className="text-sm text-error">{error}</p>}
+          <Button type="submit" className="mt-2" disabled={submitting}>
+            {submitting ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
           </Button>
         </form>
       </div>
     );
   }
 
+  const displayName =
+    (user.user_metadata?.full_name as string | undefined) || user.email?.split("@")[0] || "there";
+
   return (
     <div className="container-aavira py-10 md:py-14 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-10 pb-6 border-b border-line">
         <div>
           <p className="text-sm text-charcoal-faint">Welcome back,</p>
-          <h2 className="font-display text-2xl">{user.name}</h2>
+          <h2 className="font-display text-2xl">{displayName}</h2>
           <p className="text-sm text-charcoal-soft mt-0.5">{user.email}</p>
         </div>
         <button
@@ -130,11 +200,11 @@ export function AccountClient() {
       ) : (
         <div className="flex flex-col gap-4">
           {orders.map((order) => (
-            <div key={order.orderNumber} className="border border-line p-4">
+            <div key={order.id} className="border border-line p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium">Order #{order.orderNumber}</span>
                 <span className="text-xs text-charcoal-faint">
-                  {new Date(order.placedAt).toLocaleDateString("en-IN", {
+                  {new Date(order.createdAt).toLocaleDateString("en-IN", {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
@@ -144,10 +214,10 @@ export function AccountClient() {
               <div className="flex gap-2 mb-3">
                 {order.items.slice(0, 4).map((line) => (
                   <div
-                    key={`${line.productId}-${line.variantLabel}`}
+                    key={line.id}
                     className="relative h-12 w-12 overflow-hidden bg-ivory-deep"
                   >
-                    <Image src={line.image} alt={line.name} fill sizes="48px" className="object-cover" />
+                    <Image src={line.image} alt={line.productName} fill sizes="48px" className="object-cover" />
                   </div>
                 ))}
               </div>

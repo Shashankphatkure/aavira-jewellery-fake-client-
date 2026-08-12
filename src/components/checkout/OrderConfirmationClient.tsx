@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { readLastOrder, type Order } from "@/lib/commerce/order";
+import { readLastOrderSnapshot, type Order } from "@/lib/commerce/orders";
 import { formatPrice } from "@/lib/utils";
 import { LinkButton } from "@/components/ui/Button";
 
@@ -13,7 +13,7 @@ export function OrderConfirmationClient() {
   useEffect(() => {
     // Hydrating client-only sessionStorage after mount avoids an SSR/client markup mismatch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOrder(readLastOrder());
+    setOrder(readLastOrderSnapshot());
   }, []);
 
   if (order === undefined) return null;
@@ -33,24 +33,24 @@ export function OrderConfirmationClient() {
   return (
     <div className="container-aavira py-14 md:py-20 max-w-2xl mx-auto text-center">
       <CheckCircle2 size={44} strokeWidth={1.2} className="mx-auto text-gold-deep mb-5" />
-      <h1 className="font-display text-3xl md:text-4xl mb-3">Thank you, {order.contact.name.split(" ")[0]}</h1>
-      <p className="text-charcoal-soft mb-1">
-        Your order has been confirmed.
-      </p>
+      <h1 className="font-display text-3xl md:text-4xl mb-3">
+        Thank you, {order.contactName.split(" ")[0]}
+      </h1>
+      <p className="text-charcoal-soft mb-1">Your order has been confirmed.</p>
       <p className="text-sm text-charcoal-faint mb-10">
         Order #{order.orderNumber} · A confirmation has been sent to{" "}
-        {order.contact.email}
+        {order.contactEmail}
       </p>
 
       <div className="border border-line text-left divide-y divide-line-soft mb-8">
         {order.items.map((line) => (
-          <div key={`${line.productId}-${line.variantLabel}`} className="flex gap-4 p-4">
+          <div key={line.id} className="flex gap-4 p-4">
             <div className="relative h-16 w-14 shrink-0 overflow-hidden bg-ivory-deep">
-              <Image src={line.image} alt={line.name} fill sizes="56px" className="object-cover" />
+              <Image src={line.image} alt={line.productName} fill sizes="56px" className="object-cover" />
             </div>
             <div className="flex-1 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">{line.name}</p>
+                <p className="text-sm font-medium">{line.productName}</p>
                 <p className="text-xs text-charcoal-faint">
                   {line.variantLabel} · Qty {line.quantity}
                 </p>
@@ -71,10 +71,10 @@ export function OrderConfirmationClient() {
             Shipping to
           </p>
           <p className="text-sm text-charcoal-soft leading-relaxed">
-            {order.address.line1}
-            {order.address.line2 && `, ${order.address.line2}`}
+            {order.addressLine1}
+            {order.addressLine2 && `, ${order.addressLine2}`}
             <br />
-            {order.address.city}, {order.address.state} {order.address.pincode}
+            {order.city}, {order.state} {order.pincode}
           </p>
         </div>
         <div>
@@ -82,9 +82,9 @@ export function OrderConfirmationClient() {
             Payment
           </p>
           <p className="text-sm text-charcoal-soft">
-            {order.payment === "upi"
+            {order.paymentMethod === "upi"
               ? "UPI"
-              : order.payment === "card"
+              : order.paymentMethod === "card"
                 ? "Credit / Debit Card"
                 : "Cash on Delivery"}
           </p>

@@ -7,7 +7,7 @@ import {
   RING_IMAGES,
   SET_FLATLAY_IMAGES,
 } from "@/lib/commerce/images";
-import { getProductsByCategory } from "@/lib/commerce/data";
+import { getProducts } from "@/lib/commerce/data";
 import { Reveal } from "@/components/ui/Reveal";
 
 const CATEGORIES = [
@@ -18,7 +18,13 @@ const CATEGORIES = [
   { label: "Sets", href: "/shop/sets", image: SET_FLATLAY_IMAGES[0], category: "sets" as const },
 ];
 
-export function CategoryShowcase() {
+export async function CategoryShowcase() {
+  const products = await getProducts();
+  const countByCategory = products.reduce<Record<string, number>>((acc, p) => {
+    acc[p.category] = (acc[p.category] ?? 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <section className="container-aavira py-20 md:py-28">
       <Reveal className="text-center mb-12 md:mb-14">
@@ -30,7 +36,7 @@ export function CategoryShowcase() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5">
         {CATEGORIES.map((cat, i) => {
-          const count = getProductsByCategory(cat.category).length;
+          const count = countByCategory[cat.category] ?? 0;
           return (
             <Reveal key={cat.href} delay={Math.min(i * 0.06, 0.3)}>
               <Link href={cat.href} className="group block">

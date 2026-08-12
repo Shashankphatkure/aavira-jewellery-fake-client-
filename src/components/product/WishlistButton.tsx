@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Heart } from "lucide-react";
 import { useCommerce } from "@/context/CommerceContext";
@@ -14,15 +15,26 @@ export function WishlistButton({
   size?: number;
   className?: string;
 }) {
-  const { toggleWishlist, isWishlisted } = useCommerce();
+  const router = useRouter();
+  const { user, toggleWishlist, isWishlisted } = useCommerce();
   const wishlisted = isWishlisted(productId);
 
   return (
     <button
       type="button"
-      aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+      aria-label={
+        !user
+          ? "Sign in to save to your wishlist"
+          : wishlisted
+            ? "Remove from wishlist"
+            : "Add to wishlist"
+      }
       onClick={(e) => {
         e.preventDefault();
+        if (!user) {
+          router.push("/account");
+          return;
+        }
         toggleWishlist(productId);
       }}
       className={cn(

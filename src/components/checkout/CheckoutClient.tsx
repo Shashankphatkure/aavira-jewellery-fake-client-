@@ -7,20 +7,21 @@ import { useCommerce } from "@/context/CommerceContext";
 import { formatPrice, cn } from "@/lib/utils";
 import { OrderSummary } from "@/components/cart/OrderSummary";
 import { Button, LinkButton } from "@/components/ui/Button";
-import { saveLastOrder } from "@/lib/commerce/order";
+import { createOrder, saveLastOrderSnapshot, type PaymentMethod } from "@/lib/commerce/orders";
 
 const STEPS = ["Contact", "Shipping", "Payment", "Review"] as const;
-type PaymentMethod = "upi" | "card" | "cod";
 
 const inputClasses =
   "w-full border border-line bg-cream px-4 py-3 text-sm outline-none focus:border-charcoal transition-colors";
 
 export function CheckoutClient() {
   const router = useRouter();
-  const { cart, cartSubtotal, clearCart } = useCommerce();
+  const { user, cart, cartSubtotal, clearCart } = useCommerce();
   const [step, setStep] = useState(0);
   const [total, setTotal] = useState(cartSubtotal);
   const [payment, setPayment] = useState<PaymentMethod>("upi");
+  const [placing, setPlacing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [contact, setContact] = useState({ name: "", email: "", phone: "" });
   const [address, setAddress] = useState({
@@ -42,23 +43,42 @@ export function CheckoutClient() {
     );
   }
 
-  function placeOrder() {
-    const orderNumber = `AAV${Math.abs(
-      Array.from(contact.email + Date.now())
-        .reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 1000000, 7)
-    )}`.slice(0, 9);
+  if (user === null) {
+    return (
+      <div className="container-aavira py-20 text-center">
+        <p className="text-charcoal-soft mb-5">
+          Sign in to complete your order — it also gets saved to your account
+          so you can track it later.
+        </p>
+        <LinkButton href="/account">Sign In to Checkout</LinkButton>
+      </div>
+    );
+  }
 
-    saveLastOrder({
-      orderNumber,
-      contact,
-      address,
-      payment,
-      items: cart,
-      total,
-      placedAt: new Date().toISOString(),
-    });
-    clearCart();
-    router.push("/checkout/confirmation");
+  async function placeOrder() {
+    setPlacing(true);
+    setError(null);
+    try {
+      const order = await createOrder({
+        contactName: contact.name,
+        contactEmail: contact.email,
+        contactPhone: contact.phone,
+        addressLine1: address.line1,
+        addressLine2: address.line2,
+        city: address.city,
+        state: address.state,
+        pincode: address.pincode,
+        paymentMethod: payment,
+        total,
+        items: cart,
+      });
+      saveLastOrderSnapshot(order);
+      clearCart();
+      router.push("/checkout/confirmation");
+    } catch {
+      setError("Something went wrong placing your order. Please try again.");
+      setPlacing(false);
+    }
   }
 
   return (
@@ -251,11 +271,14 @@ export function CheckoutClient() {
                   </div>
                 ))}
               </div>
+              {error && <p className="text-sm text-error mt-4">{error}</p>}
               <div className="flex gap-3 mt-6">
-                <Button variant="outline" onClick={() => setStep(2)}>
+                <Button variant="outline" onClick={() => setStep(2)} disabled={placing}>
                   Back
                 </Button>
-                <Button onClick={placeOrder}>Place Order — {formatPrice(total)}</Button>
+                <Button onClick={placeOrder} disabled={placing}>
+                  {placing ? "Placing Order…" : `Place Order — ${formatPrice(total)}`}
+                </Button>
               </div>
             </div>
           )}

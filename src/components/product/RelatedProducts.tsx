@@ -2,8 +2,8 @@ import type { Product } from "@/lib/commerce/types";
 import { getRelatedProducts } from "@/lib/commerce/data";
 import { ProductCard } from "@/components/product/ProductCard";
 
-export function RelatedProducts({ product }: { product: Product }) {
-  const related = getRelatedProducts(product);
+export async function RelatedProducts({ product }: { product: Product }) {
+  const related = await getRelatedProducts(product);
   if (related.length === 0) return null;
 
   return (

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ShopPageClient } from "@/components/shop/ShopPageClient";
 import { resolveShopMode, shopModeTitle } from "@/lib/commerce/shop-helpers";
+import { getProducts } from "@/lib/commerce/data";
 
 const DESCRIPTIONS: Record<string, string> = {
   rings: "Statement stones and everyday bands, in gold vermeil and silver.",
@@ -31,11 +32,12 @@ export default async function ShopCategoryPage(
   if (!mode) notFound();
 
   const title = shopModeTitle(mode);
+  const products = await getProducts();
 
   return (
     <div>
       <PageHeader eyebrow="Shop" title={title} description={DESCRIPTIONS[category]} />
-      <ShopPageClient mode={mode} />
+      <ShopPageClient mode={mode} allProducts={products} />
     </div>
   );
 }

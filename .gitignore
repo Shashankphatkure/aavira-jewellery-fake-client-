@@ -43,3 +43,10 @@ next-env.d.ts
 # local session logs (unrelated to the app)
 mcp-logs.txt
 wa-logs.txt
+
+.vercel
+.env*
+
+# machine-local absolute-path symlink for agent tool discovery — the real
+# content is tracked at .agents/skills/, this is just a local pointer to it
+.claude/skills

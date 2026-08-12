@@ -6,8 +6,9 @@ import { LIFESTYLE_IMAGES } from "@/lib/commerce/images";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Reveal } from "@/components/ui/Reveal";
 
-export function FeaturedCollection() {
-  const products = getNewArrivals().slice(0, 3);
+export async function FeaturedCollection() {
+  const newArrivals = await getNewArrivals();
+  const products = newArrivals.slice(0, 3);
 
   return (
     <section className="container-aavira py-20 md:py-28">

@@ -3,8 +3,9 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { LinkButton } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 
-export function BestSellers() {
-  const products = getBestSellers().slice(0, 6);
+export async function BestSellers() {
+  const bestSellers = await getBestSellers();
+  const products = bestSellers.slice(0, 6);
 
   return (
     <section className="bg-ivory-deep/60 py-20 md:py-28">

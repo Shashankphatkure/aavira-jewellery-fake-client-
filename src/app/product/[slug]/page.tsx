@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { getProductBySlug, PRODUCTS } from "@/lib/commerce/data";
+import { getProductBySlug, getProducts } from "@/lib/commerce/data";
 import { CATEGORY_LABELS } from "@/lib/commerce/shop-helpers";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
@@ -10,15 +10,16 @@ import { ReviewsSection } from "@/components/product/ReviewsSection";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { SITE_URL } from "@/lib/site";
 
-export function generateStaticParams() {
-  return PRODUCTS.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  const products = await getProducts();
+  return products.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata(
   props: PageProps<"/product/[slug]">
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) return { title: "Product" };
   return {
     title: product.name,
@@ -28,7 +29,7 @@ export async function generateMetadata(
 
 export default async function ProductPage(props: PageProps<"/product/[slug]">) {
   const { slug } = await props.params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
   const jsonLd = {

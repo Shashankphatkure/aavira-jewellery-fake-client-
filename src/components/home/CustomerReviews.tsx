@@ -1,12 +1,13 @@
-import { PRODUCTS } from "@/lib/commerce/data";
+import { getProducts } from "@/lib/commerce/data";
+import type { Product } from "@/lib/commerce/types";
 import { StarRating } from "@/components/ui/StarRating";
 import { Reveal } from "@/components/ui/Reveal";
 
-function pickTestimonials() {
+function pickTestimonials(products: Product[]) {
   const seen = new Set<string>();
   const picked: { author: string; title: string; body: string; rating: number; product: string }[] = [];
 
-  for (const product of PRODUCTS) {
+  for (const product of products) {
     for (const review of product.reviews) {
       if (review.rating < 5 || seen.has(review.title)) continue;
       seen.add(review.title);
@@ -24,8 +25,9 @@ function pickTestimonials() {
   return picked;
 }
 
-export function CustomerReviews() {
-  const testimonials = pickTestimonials();
+export async function CustomerReviews() {
+  const products = await getProducts();
+  const testimonials = pickTestimonials(products);
 
   return (
     <section className="container-aavira py-20 md:py-28">

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { PRODUCTS } from "@/lib/commerce/data";
+import { getProducts } from "@/lib/commerce/data";
 import { SHOP_LINKS } from "@/lib/navigation";
 import { SITE_URL } from "@/lib/site";
 
@@ -16,7 +16,9 @@ const STATIC_PATHS = [
   "/terms-conditions",
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const products = await getProducts();
+
   const staticEntries = STATIC_PATHS.map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: new Date(),
@@ -31,7 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  const productEntries = PRODUCTS.map((product) => ({
+  const productEntries = products.map((product) => ({
     url: `${SITE_URL}/product/${product.slug}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,

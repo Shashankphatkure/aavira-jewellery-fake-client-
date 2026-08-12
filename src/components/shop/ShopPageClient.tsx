@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { PRODUCTS } from "@/lib/commerce/data";
 import type { Category, Product } from "@/lib/commerce/types";
 import {
   matchesPriceBand,
@@ -16,14 +15,20 @@ import { ShopFilters } from "@/components/shop/ShopFilters";
 import { ShopToolbar } from "@/components/shop/ShopToolbar";
 import { cn } from "@/lib/utils";
 
-function baseProducts(mode: ShopMode): Product[] {
-  if (mode.type === "all") return PRODUCTS;
+function baseProducts(mode: ShopMode, allProducts: Product[]): Product[] {
+  if (mode.type === "all") return allProducts;
   if (mode.type === "category")
-    return PRODUCTS.filter((p) => p.category === mode.category);
-  return PRODUCTS.filter((p) => p.tags.includes(mode.tag));
+    return allProducts.filter((p) => p.category === mode.category);
+  return allProducts.filter((p) => p.tags.includes(mode.tag));
 }
 
-export function ShopPageClient({ mode }: { mode: ShopMode }) {
+export function ShopPageClient({
+  mode,
+  allProducts,
+}: {
+  mode: ShopMode;
+  allProducts: Product[];
+}) {
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [priceBand, setPriceBand] = useState<PriceBand>("all");
   const [sort, setSort] = useState<SortOption>("featured");
@@ -31,7 +36,7 @@ export function ShopPageClient({ mode }: { mode: ShopMode }) {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const products = useMemo(() => {
-    let list = baseProducts(mode);
+    let list = baseProducts(mode, allProducts);
 
     if (mode.type === "all" && selectedCategories.length > 0) {
       list = list.filter((p) => selectedCategories.includes(p.category));
@@ -44,7 +49,7 @@ export function ShopPageClient({ mode }: { mode: ShopMode }) {
     else if (sort === "rating") sorted.sort((a, b) => b.rating - a.rating);
 
     return sorted;
-  }, [mode, selectedCategories, priceBand, sort]);
+  }, [mode, allProducts, selectedCategories, priceBand, sort]);
 
   function toggleCategory(category: Category) {
     setSelectedCategories((s) =>

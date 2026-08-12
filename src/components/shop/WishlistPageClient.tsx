@@ -1,13 +1,13 @@
 "use client";
 
 import { useCommerce } from "@/context/CommerceContext";
-import { PRODUCTS } from "@/lib/commerce/data";
+import type { Product } from "@/lib/commerce/types";
 import { ProductCard } from "@/components/product/ProductCard";
 import { LinkButton } from "@/components/ui/Button";
 
-export function WishlistPageClient() {
+export function WishlistPageClient({ allProducts }: { allProducts: Product[] }) {
   const { wishlist } = useCommerce();
-  const products = PRODUCTS.filter((p) => wishlist.includes(p.id));
+  const products = allProducts.filter((p) => wishlist.includes(p.id));
 
   return (
     <div className="container-aavira py-10 md:py-14">

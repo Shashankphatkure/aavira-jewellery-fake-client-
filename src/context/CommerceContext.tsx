@@ -8,6 +8,8 @@ import {
   useMemo,
   useState,
 } from "react";
+import type { User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 import type { Product } from "@/lib/commerce/types";
 
 export type CartLine = {
@@ -26,9 +28,10 @@ type CommerceState = {
   isCartOpen: boolean;
 };
 
-const STORAGE_KEY = "aavira-commerce";
+const CART_STORAGE_KEY = "aavira-cart";
 
 type CommerceContextValue = CommerceState & {
+  user: User | null | undefined;
   addToCart: (product: Product, variantLabel: string, quantity?: number) => void;
   removeFromCart: (productId: string, variantLabel: string) => void;
   updateQuantity: (
@@ -48,6 +51,8 @@ type CommerceContextValue = CommerceState & {
 const CommerceContext = createContext<CommerceContextValue | null>(null);
 
 export function CommerceProvider({ children }: { children: React.ReactNode }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
   const [state, setState] = useState<CommerceState>({
     cart: [],
     wishlist: [],
@@ -55,14 +60,15 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
   });
   const [hydrated, setHydrated] = useState(false);
 
+  // Cart stays client-only (localStorage) — no account needed to shop.
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem(CART_STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Pick<CommerceState, "cart" | "wishlist">;
+        const cart = JSON.parse(raw) as CartLine[];
         // Hydrating client-only localStorage after mount avoids an SSR/client markup mismatch.
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setState((s) => ({ ...s, cart: parsed.cart ?? [], wishlist: parsed.wishlist ?? [] }));
+        setState((s) => ({ ...s, cart }));
       }
     } catch {
       // ignore malformed local storage
@@ -73,11 +79,38 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ cart: state.cart, wishlist: state.wishlist })
-    );
-  }, [state.cart, state.wishlist, hydrated]);
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.cart));
+  }, [state.cart, hydrated]);
+
+  // Wishlist is backed by the database and scoped to the signed-in user.
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!user) {
+      // Syncing to the external auth state change (user signed out), not local state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setState((s) => ({ ...s, wishlist: [] }));
+      return;
+    }
+    supabase
+      .from("wishlists")
+      .select("product_id")
+      .then(({ data }) => {
+        setState((s) => ({ ...s, wishlist: (data ?? []).map((row) => row.product_id) }));
+      });
+  }, [user, supabase]);
 
   const addToCart = useCallback<CommerceContextValue["addToCart"]>(
     (product, variantLabel, quantity = 1) => {
@@ -144,14 +177,35 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, cart: [] }));
   }, []);
 
-  const toggleWishlist = useCallback((productId: string) => {
-    setState((s) => ({
-      ...s,
-      wishlist: s.wishlist.includes(productId)
-        ? s.wishlist.filter((id) => id !== productId)
-        : [...s.wishlist, productId],
-    }));
-  }, []);
+  const toggleWishlist = useCallback(
+    (productId: string) => {
+      if (!user) return;
+
+      setState((s) => {
+        const wasWishlisted = s.wishlist.includes(productId);
+        const wishlist = wasWishlisted
+          ? s.wishlist.filter((id) => id !== productId)
+          : [...s.wishlist, productId];
+
+        if (wasWishlisted) {
+          supabase
+            .from("wishlists")
+            .delete()
+            .eq("user_id", user.id)
+            .eq("product_id", productId)
+            .then();
+        } else {
+          supabase
+            .from("wishlists")
+            .insert({ user_id: user.id, product_id: productId })
+            .then();
+        }
+
+        return { ...s, wishlist };
+      });
+    },
+    [user, supabase]
+  );
 
   const isWishlisted = useCallback(
     (productId: string) => state.wishlist.includes(productId),
@@ -173,6 +227,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<CommerceContextValue>(
     () => ({
       ...state,
+      user,
       addToCart,
       removeFromCart,
       updateQuantity,
@@ -186,6 +241,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       state,
+      user,
       addToCart,
       removeFromCart,
       updateQuantity,

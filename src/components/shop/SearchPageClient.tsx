@@ -3,24 +3,27 @@
 import { useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { Search } from "lucide-react";
-import { PRODUCTS } from "@/lib/commerce/data";
 import type { Product } from "@/lib/commerce/types";
 import { ProductCard } from "@/components/product/ProductCard";
 import { QuickViewModal } from "@/components/product/QuickViewModal";
 
-const fuse = new Fuse(PRODUCTS, {
-  keys: ["name", "category", "material", "description"],
-  threshold: 0.35,
-});
-
-export function SearchPageClient() {
+export function SearchPageClient({ allProducts }: { allProducts: Product[] }) {
   const [query, setQuery] = useState("");
   const [quickView, setQuickView] = useState<Product | null>(null);
+
+  const fuse = useMemo(
+    () =>
+      new Fuse(allProducts, {
+        keys: ["name", "category", "material", "description"],
+        threshold: 0.35,
+      }),
+    [allProducts]
+  );
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
     return fuse.search(query).map((r) => r.item);
-  }, [query]);
+  }, [query, fuse]);
 
   return (
     <div className="container-aavira py-10 md:py-14">
