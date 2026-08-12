@@ -12,81 +12,85 @@ export function Header() {
   const { cartCount, wishlist, openCart } = useCommerce();
 
   return (
-    <header className="sticky top-0 z-40 bg-ivory/95 backdrop-blur border-b border-line">
-      <div className="container-aavira flex items-center justify-between h-16 md:h-20">
-        <button
-          type="button"
-          aria-label="Open menu"
-          className="md:hidden -ml-2 p-2 text-charcoal"
-          onClick={() => setMobileOpen(true)}
-        >
-          <Menu size={22} strokeWidth={1.5} />
-        </button>
-
-        <Link
-          href="/"
-          className="font-display text-2xl md:text-3xl italic tracking-tight text-charcoal"
-        >
-          Aavira
-        </Link>
-
-        <nav className="hidden md:flex items-center gap-8">
-          {PRIMARY_NAV.slice(0, 6).map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-xs uppercase tracking-[0.12em] text-charcoal-soft hover:text-charcoal transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Link
-            href="/search"
-            aria-label="Search"
-            className="p-2 text-charcoal hover:text-gold-deep transition-colors"
-          >
-            <Search size={19} strokeWidth={1.5} />
-          </Link>
-          <Link
-            href="/account"
-            aria-label="Account"
-            className="hidden sm:inline-flex p-2 text-charcoal hover:text-gold-deep transition-colors"
-          >
-            <User size={19} strokeWidth={1.5} />
-          </Link>
-          <Link
-            href="/wishlist"
-            aria-label="Wishlist"
-            className="relative p-2 text-charcoal hover:text-gold-deep transition-colors"
-          >
-            <Heart size={19} strokeWidth={1.5} />
-            {wishlist.length > 0 && (
-              <span className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-gold text-[9px] text-cream flex items-center justify-center">
-                {wishlist.length}
-              </span>
-            )}
-          </Link>
+    <>
+      <header className="sticky top-0 z-40 bg-ivory/95 backdrop-blur border-b border-line">
+        <div className="container-aavira flex items-center justify-between h-16 md:h-20">
           <button
             type="button"
-            aria-label="Open cart"
-            onClick={openCart}
-            className="relative p-2 text-charcoal hover:text-gold-deep transition-colors"
+            aria-label="Open menu"
+            className="md:hidden -ml-2 p-2 text-charcoal"
+            onClick={() => setMobileOpen(true)}
           >
-            <ShoppingBag size={19} strokeWidth={1.5} />
-            {cartCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-gold text-[9px] text-cream flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
+            <Menu size={22} strokeWidth={1.5} />
           </button>
-        </div>
-      </div>
 
+          <Link
+            href="/"
+            className="font-display text-2xl md:text-3xl italic tracking-tight text-charcoal"
+          >
+            Aavira
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-8">
+            {PRIMARY_NAV.slice(0, 6).map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-xs uppercase tracking-[0.12em] text-charcoal-soft hover:text-charcoal transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Link
+              href="/search"
+              aria-label="Search"
+              className="p-2 text-charcoal hover:text-gold-deep transition-colors"
+            >
+              <Search size={19} strokeWidth={1.5} />
+            </Link>
+            <Link
+              href="/account"
+              aria-label="Account"
+              className="hidden sm:inline-flex p-2 text-charcoal hover:text-gold-deep transition-colors"
+            >
+              <User size={19} strokeWidth={1.5} />
+            </Link>
+            <Link
+              href="/wishlist"
+              aria-label="Wishlist"
+              className="relative p-2 text-charcoal hover:text-gold-deep transition-colors"
+            >
+              <Heart size={19} strokeWidth={1.5} />
+              {wishlist.length > 0 && (
+                <span className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-gold text-[9px] text-cream flex items-center justify-center">
+                  {wishlist.length}
+                </span>
+              )}
+            </Link>
+            <button
+              type="button"
+              aria-label="Open cart"
+              onClick={openCart}
+              className="relative p-2 text-charcoal hover:text-gold-deep transition-colors"
+            >
+              <ShoppingBag size={19} strokeWidth={1.5} />
+              {cartCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-gold text-[9px] text-cream flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Rendered outside <header> deliberately: header's backdrop-blur creates a
+          containing block that would trap this fixed-position overlay inside it. */}
       <MobileNav open={mobileOpen} onClose={() => setMobileOpen(false)} />
-    </header>
+    </>
   );
 }
 
