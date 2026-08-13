@@ -1,18 +1,20 @@
 "use client";
 
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { LinkButton } from "@/components/ui/Button";
 import { LIFESTYLE_IMAGES } from "@/lib/commerce/images";
 import { cn } from "@/lib/utils";
+import giftTheMomentImage from "@/assets/hero/gift-the-moment.jpg";
 
 type HeroSlide = {
   id: string;
   eyebrow: string;
   headline: string;
   description?: string;
-  image?: string;
+  image?: string | StaticImageData;
+  imagePosition?: string;
   primaryCta?: { label: string; href: string };
   secondaryCta?: { label: string; href: string };
   placeholder?: boolean;
@@ -30,12 +32,14 @@ const SLIDES: HeroSlide[] = [
     secondaryCta: { label: "Shop Best Sellers", href: "/shop/best-sellers" },
   },
   {
-    id: "next-campaign",
-    eyebrow: "Coming Soon",
-    headline: "Your next campaign goes here",
-    description:
-      "This slide is a placeholder — swap it for your next sale, drop, or seasonal moment.",
-    placeholder: true,
+    id: "gift-the-moment",
+    eyebrow: "Gift The Moment",
+    headline: "Some bonds deserve gold.",
+    description: "Thoughtful jewellery for the people who mean the world.",
+    image: giftTheMomentImage,
+    imagePosition: "center_35%",
+    primaryCta: { label: "Shop Gifting", href: "/shop/sets" },
+    secondaryCta: { label: "View Gift Guide", href: "/shop/sets" },
   },
 ];
 
@@ -103,7 +107,10 @@ function ContentSlide({ slide }: { slide: HeroSlide }) {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[65%_center] opacity-90"
+          className="object-cover opacity-90"
+          style={{
+            objectPosition: (slide.imagePosition ?? "65%_center").replace(/_/g, " "),
+          }}
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-charcoal/70 via-charcoal/10 to-transparent" />
