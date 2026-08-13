@@ -128,7 +128,7 @@ function ContentSlide({ slide }: { slide: HeroSlide }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="font-display text-4xl sm:text-5xl md:text-6xl text-cream max-w-xl text-balance leading-[1.08] min-h-[3.3em] flex flex-col justify-end"
+          className="font-display text-4xl sm:text-5xl md:text-6xl text-cream max-w-xl text-balance leading-[1.08] min-h-[3.3em]"
         >
           {slide.headline}
         </motion.h1>
