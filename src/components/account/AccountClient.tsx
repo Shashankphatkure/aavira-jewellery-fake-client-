@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchMyOrders, type Order } from "@/lib/commerce/orders";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { GoogleIcon } from "@/components/icons/GoogleIcon";
 
 const inputClasses =
   "w-full border border-line bg-cream px-4 py-3 text-sm outline-none focus:border-charcoal transition-colors";
@@ -22,6 +23,16 @@ export function AccountClient() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "auth") {
+      // Reflecting the OAuth callback's redirect state, not local interaction.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setError("We couldn't sign you in with Google. Please try again.");
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -94,9 +105,46 @@ export function AccountClient() {
     setUser(null);
   }
 
+  async function handleGoogleSignIn() {
+    setError(null);
+    setGoogleLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
+    }
+    // On success the browser navigates away to Google, so no further state change here.
+  }
+
   if (!user) {
     return (
       <div className="container-aavira py-14 md:py-20 max-w-sm mx-auto">
+        <h1 className="font-display text-2xl text-center mb-8">Welcome to Aavira</h1>
+
+        {notice && (
+          <p className="text-sm text-gold-deep mb-4 text-center">{notice}</p>
+        )}
+        {error && <p className="text-sm text-error mb-4 text-center">{error}</p>}
+
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading}
+          className="w-full flex items-center justify-center gap-3 border border-line bg-cream px-4 py-3 text-sm hover:border-charcoal transition-colors disabled:opacity-60"
+        >
+          <GoogleIcon />
+          {googleLoading ? "Redirecting…" : "Continue with Google"}
+        </button>
+
+        <div className="flex items-center gap-3 my-6">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-xs uppercase tracking-[0.1em] text-charcoal-faint">or</span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
         <div className="flex border-b border-line mb-8">
           <button
             type="button"
@@ -123,10 +171,6 @@ export function AccountClient() {
             Create Account
           </button>
         </div>
-
-        {notice && (
-          <p className="text-sm text-gold-deep mb-4 text-center">{notice}</p>
-        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {mode === "register" && (
@@ -155,7 +199,6 @@ export function AccountClient() {
             onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
             className={inputClasses}
           />
-          {error && <p className="text-sm text-error">{error}</p>}
           <Button type="submit" className="mt-2" disabled={submitting}>
             {submitting ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
           </Button>
