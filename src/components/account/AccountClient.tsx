@@ -217,6 +217,10 @@ export function AccountClient() {
           <p className="text-sm text-charcoal-faint">Welcome back,</p>
           <h2 className="font-display text-2xl">{displayName}</h2>
           <p className="text-sm text-charcoal-soft mt-0.5">{user.email}</p>
+          <span className="inline-flex items-center gap-1.5 mt-2 text-[11px] uppercase tracking-[0.1em] text-gold-deep">
+            <span className="h-1.5 w-1.5 rounded-full bg-gold" aria-hidden />
+            Signed in
+          </span>
         </div>
         <button
           type="button"

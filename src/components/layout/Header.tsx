@@ -9,7 +9,10 @@ import { cn } from "@/lib/utils";
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { cartCount, wishlist, openCart } = useCommerce();
+  const { cartCount, wishlist, user, openCart } = useCommerce();
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ||
+    user?.email?.split("@")[0];
 
   return (
     <>
@@ -53,10 +56,16 @@ export function Header() {
             </Link>
             <Link
               href="/account"
-              aria-label="Account"
-              className="hidden sm:inline-flex p-2 text-charcoal hover:text-gold-deep transition-colors"
+              aria-label={user ? `Account — signed in as ${displayName}` : "Account"}
+              className="relative hidden sm:inline-flex p-2 text-charcoal hover:text-gold-deep transition-colors"
             >
               <User size={19} strokeWidth={1.5} />
+              {user && (
+                <span
+                  aria-hidden
+                  className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-gold ring-2 ring-ivory"
+                />
+              )}
             </Link>
             <Link
               href="/wishlist"
@@ -89,12 +98,24 @@ export function Header() {
 
       {/* Rendered outside <header> deliberately: header's backdrop-blur creates a
           containing block that would trap this fixed-position overlay inside it. */}
-      <MobileNav open={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <MobileNav
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        displayName={user ? displayName : undefined}
+      />
     </>
   );
 }
 
-function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
+function MobileNav({
+  open,
+  onClose,
+  displayName,
+}: {
+  open: boolean;
+  onClose: () => void;
+  displayName?: string;
+}) {
   return (
     <div
       className={cn(
@@ -152,9 +173,16 @@ function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
           <Link
             href="/account"
             onClick={onClose}
-            className="py-3 text-sm uppercase tracking-[0.12em] text-charcoal-soft"
+            className="py-3 text-sm uppercase tracking-[0.12em] text-charcoal-soft flex items-center gap-2"
           >
-            Account
+            {displayName ? (
+              <>
+                <span className="h-1.5 w-1.5 rounded-full bg-gold" aria-hidden />
+                Signed in as {displayName}
+              </>
+            ) : (
+              "Account"
+            )}
           </Link>
         </nav>
       </div>
